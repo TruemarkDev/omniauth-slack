@@ -32,7 +32,8 @@ module OmniAuth
       extra do
         hash = {
           "raw_info" => raw_info,
-          "token_type" => access_token.params["token_type"]
+          "token_type" => access_token.params["token_type"],
+          "team_info" => team_identity
         }
         hash["bot_info"] = bot_info if access_token.params["token_type"] == "bot"
         hash
@@ -59,6 +60,10 @@ module OmniAuth
         else
           @raw_info ||= access_token.get("/api/users.identity").parsed
         end
+      end
+
+      def team_identity
+        @team_identity ||= identity["team"].to_h
       end
 
       def callback_url
@@ -113,7 +118,6 @@ module OmniAuth
           (request.params["state"].to_s.empty? ||
             !secure_compare(request.params["state"], session.delete("omniauth.state")))
       end
-
 
       def secure_compare(string_a, string_b)
         return false unless string_a.bytesize == string_b.bytesize
