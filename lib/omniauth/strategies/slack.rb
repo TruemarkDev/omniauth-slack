@@ -56,7 +56,10 @@ module OmniAuth
           "user" => raw_info["user"] || raw_info["profile"],
           "team" => raw_info["team"] || access_token.params["team"]
         }
-        @identity["user"]["id"] ||= access_token.params.dig("authed_user", "id")
+        if authed_user_token?
+          @identity["user"]["id"] ||= access_token.params.dig("authed_user", "id")
+        end
+
         @identity
       end
 
@@ -116,8 +119,11 @@ module OmniAuth
           "bot_token" => access_token.token
         }
         creds["user_token"] = access_token.params.dig("authed_user", "access_token") if authed_user_token?
-        creds["expires"] = access_token.expires?
+        expires = access_token.expires_at.present? || access_token.expires_in.present?
+        creds["refresh_token"] = access_token.refresh_token if expires && access_token.refresh_token
         creds["expires_at"] = access_token.expires_at if access_token.expires_at
+        creds["expires_in"] = access_token.expires_in if access_token.expires_in
+        creds["expires"] = access_token.expires?
         creds
       end
 
