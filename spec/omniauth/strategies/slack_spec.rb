@@ -108,6 +108,7 @@ describe OmniAuth::Strategies::Slack do
       expires_in = double("expires_in", present?: false)
       allow(access_token).to receive(:expires_at).and_return(expires_at)
       allow(access_token).to receive(:expires_in).and_return(expires_in)
+      allow_any_instance_of(described_class).to receive(:authed_user_token?).and_return(false)
     end
 
     it "returns a Hash" do

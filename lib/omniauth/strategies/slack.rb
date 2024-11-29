@@ -35,7 +35,8 @@ module OmniAuth
           "token_type" => access_token.params["token_type"],
           "team_info" => team_identity
         }
-        hash["bot_info"] = bot_info if access_token.params["token_type"] == "bot"
+        hash["bot_info"] = bot_info if bot_access_token?
+        hash["authed_user"] = authed_user_info if authed_user_token?
         hash
       end
 
@@ -43,23 +44,31 @@ module OmniAuth
         @bot_info ||= access_token.get("/api/users.profile.get").parsed["profile"]
       end
 
+      def authed_user_info
+        user_token = access_token.params.dig("authed_user", "access_token")
+        user_id = access_token.params.dig("authed_user", "id")
+        url = "/api/users.profile.get?user=#{user_id}"
+        ::OAuth2::AccessToken.new(client, user_token).get(url).parsed
+      end
+
       def identity
         @identity ||= {
           "user" => raw_info["user"] || raw_info["profile"],
           "team" => raw_info["team"] || access_token.params["team"]
         }
-        @identity["user"]["id"] ||= access_token.params["authed_user"]["id"]
+        if authed_user_token?
+          @identity["user"]["id"] ||= access_token.params.dig("authed_user", "id")
+        end
+
         @identity
       end
 
       def raw_info
-        if access_token.params["token_type"] == "bot"
-          user_id = access_token.params["authed_user"]["id"]
-          url = "/api/users.profile.get?user=#{user_id}"
-          @raw_info ||= access_token.get(url).parsed
-        else
-          @raw_info ||= access_token.get("/api/users.identity").parsed
-        end
+        @raw_info ||= if bot_access_token?
+                        fetch_user_profile
+                      else
+                        access_token.get("/api/users.identity").parsed
+                      end
       end
 
       def team_identity
@@ -71,7 +80,11 @@ module OmniAuth
       end
 
       def client
-        ::OAuth2::SlackClient.new(options.client_id, options.client_secret, deep_symbolize(options.client_options))
+        ::OAuth2::SlackClient.new(
+          options.client_id,
+          options.client_secret,
+          deep_symbolize(options.client_options)
+        )
       end
 
       def callback_phase
@@ -103,6 +116,7 @@ module OmniAuth
 
       def credentials
         hash = { "token" => access_token.token }
+        hash["user_token"] = access_token.params.dig("authed_user", "access_token") if authed_user_token?
         expires = access_token.expires_at.present? || access_token.expires_in.present?
         hash["refresh_token"] = access_token.refresh_token if expires && access_token.refresh_token
         hash["expires_at"] = access_token.expires_at if access_token.expires_at
@@ -145,6 +159,22 @@ module OmniAuth
         self.access_token = access_token.refresh! if access_token.expired?
         env["omniauth.auth"] = auth_hash
         call_app!
+      end
+
+      private
+
+      def bot_access_token?
+        access_token.params["token_type"] == "bot"
+      end
+
+      def authed_user_token?
+        access_token.params.dig("authed_user", "access_token").present?
+      end
+
+      def fetch_user_profile
+        user_id = access_token.params.dig("authed_user", "id")
+        url = "/api/users.profile.get?user=#{user_id}"
+        access_token.get(url).parsed
       end
     end
   end
