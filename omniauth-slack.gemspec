@@ -16,11 +16,11 @@ Gem::Specification.new do |spec|
   spec.files = Dir["lib/**/*"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "omniauth-oauth2", "~> 1.8"
+  spec.add_dependency "omniauth-oauth2", "~> 1.9"
 
-  spec.add_development_dependency "bundler", "~> 4.0"
+  spec.add_development_dependency "bundler", "~> 4.0.10"
   spec.add_development_dependency "pry", "~> 0.16.0"
-  spec.add_development_dependency "rake", "~> 13.1"
-  spec.add_development_dependency "rspec", "~> 3.13"
-  spec.add_development_dependency "rubocop", "~> 1.86"
+  spec.add_development_dependency "rake", "~> 13.4"
+  spec.add_development_dependency "rspec", "~> 3.13.2"
+  spec.add_development_dependency "rubocop", "~> 1.86.1"
 end

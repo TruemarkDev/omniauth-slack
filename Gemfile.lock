@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     omniauth-slack (0.1)
-      omniauth-oauth2 (~> 1.8)
+      omniauth-oauth2 (~> 1.9)
 
 GEM
   remote: https://rubygems.org/
@@ -110,12 +110,12 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 4.0)
+  bundler (~> 4.0.10)
   omniauth-slack!
   pry (~> 0.16.0)
-  rake (~> 13.1)
-  rspec (~> 3.13)
-  rubocop (~> 1.86)
+  rake (~> 13.4)
+  rspec (~> 3.13.2)
+  rubocop (~> 1.86.1)
 
 CHECKSUMS
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
@@ -165,4 +165,4 @@ CHECKSUMS
   version_gem (1.1.9) sha256=0c1a0962ae543c84a00889bb018d9f14d8f8af6029d26b295d98774e3d2eb9a4
 
 BUNDLED WITH
-  4.0.4
+  4.0.10
