@@ -7,7 +7,9 @@ module OmniAuth
     class Slack < OmniAuth::Strategies::OAuth2
       option :name, "slack"
 
-      option :authorize_options, %i[user_scope scope]
+      option :authorize_options, %i[user_scope scope team]
+
+      option :pkce, true
 
       option :client_options, {
         site: "https://slack.com",
@@ -22,10 +24,22 @@ module OmniAuth
       uid { "#{identity.dig("user", "id")}-#{identity.dig("team", "id")}" }
 
       info do
+        user = identity["user"] || {}
         {
-          name: identity.dig("user", "name") || identity.dig("user", "real_name"),
-          email: identity.dig("user", "email"),
-          image: identity.dig("user", "image_48")
+          name: user["name"] || user["real_name"],
+          email: user["email"],
+          image: user["image_48"],
+          image_192: user["image_192"],
+          image_512: user["image_512"],
+          image_original: user["image_original"],
+          title: user["title"],
+          phone: user["phone"],
+          status_text: user["status_text"],
+          status_emoji: user["status_emoji"],
+          tz: user["tz"],
+          tz_offset: user["tz_offset"],
+          is_admin: user["is_admin"],
+          is_owner: user["is_owner"]
         }
       end
 
@@ -37,6 +51,13 @@ module OmniAuth
         }
         hash["bot_info"] = bot_info if bot_access_token?
         hash["authed_user"] = authed_user_info if authed_user_token?
+        hash["enterprise_info"] = access_token.params["enterprise"] if access_token.params["enterprise"]
+        hash["incoming_webhook"] = access_token.params["incoming_webhook"] if access_token.params["incoming_webhook"]
+        hash["bot_user_id"] = access_token.params["bot_user_id"] if access_token.params["bot_user_id"]
+        hash["scope"] = access_token.params["scope"] if access_token.params["scope"]
+        if access_token.params.dig("authed_user", "scope")
+          hash["authed_user_scope"] = access_token.params.dig("authed_user", "scope")
+        end
         hash
       end
 
