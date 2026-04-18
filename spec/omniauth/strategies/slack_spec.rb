@@ -19,6 +19,18 @@ describe OmniAuth::Strategies::Slack do
     OmniAuth.config.test_mode = false
   end
 
+  describe "default options" do
+    subject { fresh_strategy.new(app) }
+
+    it "enables PKCE by default" do
+      expect(subject.options[:pkce]).to be true
+    end
+
+    it "includes team in authorize_options" do
+      expect(subject.options[:authorize_options]).to include(:team)
+    end
+  end
+
   describe "Subclassing Behavior" do
     subject { fresh_strategy }
 
@@ -139,6 +151,204 @@ describe OmniAuth::Strategies::Slack do
 
     it "returns uid combined from user id and team id" do
       expect(strategy.uid).to eq("U123-T456")
+    end
+  end
+
+  describe "#extra" do
+    let(:strategy) { fresh_strategy.new("abc", "def") }
+    let(:access_token) { instance_double("OAuth2::AccessToken") }
+    let(:token_params) { { "token_type" => "bot" } }
+
+    before do
+      allow(strategy).to receive(:access_token).and_return(access_token)
+      allow(access_token).to receive(:token).and_return("xoxb-123")
+      allow(access_token).to receive(:params).and_return(token_params)
+      allow(access_token).to receive(:get).and_return(
+        double("Response", parsed: { "profile" => { "real_name" => "Bot" } })
+      )
+    end
+
+    context "when enterprise data is present" do
+      let(:token_params) do
+        {
+          "token_type" => "bot",
+          "enterprise" => { "id" => "E123", "name" => "Acme Corp" },
+          "authed_user" => { "id" => "U789" }
+        }
+      end
+
+      it "includes enterprise_info in extra" do
+        extra = strategy.extra
+        expect(extra["enterprise_info"]).to eq({ "id" => "E123", "name" => "Acme Corp" })
+      end
+    end
+
+    context "when enterprise data is not present" do
+      it "does not include enterprise_info in extra" do
+        extra = strategy.extra
+        expect(extra).not_to have_key("enterprise_info")
+      end
+    end
+
+    context "when incoming_webhook data is present" do
+      let(:token_params) do
+        {
+          "token_type" => "bot",
+          "incoming_webhook" => {
+            "channel" => "#general",
+            "channel_id" => "C123",
+            "configuration_url" => "https://example.com/config",
+            "url" => "https://hooks.slack.com/services/T00/B00/xxx"
+          },
+          "authed_user" => { "id" => "U789" }
+        }
+      end
+
+      it "includes incoming_webhook in extra" do
+        extra = strategy.extra
+        expect(extra["incoming_webhook"]).to eq(
+          "channel" => "#general",
+          "channel_id" => "C123",
+          "configuration_url" => "https://example.com/config",
+          "url" => "https://hooks.slack.com/services/T00/B00/xxx"
+        )
+      end
+    end
+
+    context "when incoming_webhook data is not present" do
+      it "does not include incoming_webhook in extra" do
+        extra = strategy.extra
+        expect(extra).not_to have_key("incoming_webhook")
+      end
+    end
+
+    context "when bot token is present" do
+      let(:token_params) do
+        {
+          "token_type" => "bot",
+          "bot_user_id" => "U_BOT_123",
+          "authed_user" => { "id" => "U789" }
+        }
+      end
+
+      it "includes bot_user_id in extra" do
+        extra = strategy.extra
+        expect(extra["bot_user_id"]).to eq("U_BOT_123")
+      end
+    end
+
+    context "when bot_user_id is not present" do
+      it "does not include bot_user_id in extra" do
+        extra = strategy.extra
+        expect(extra).not_to have_key("bot_user_id")
+      end
+    end
+
+    context "when scopes are present" do
+      let(:token_params) do
+        {
+          "token_type" => "bot",
+          "scope" => "chat:write,users:read",
+          "authed_user" => { "id" => "U789", "scope" => "identity.basic,identity.email" }
+        }
+      end
+
+      it "includes scopes in extra" do
+        extra = strategy.extra
+        expect(extra["scope"]).to eq("chat:write,users:read")
+        expect(extra["authed_user_scope"]).to eq("identity.basic,identity.email")
+      end
+    end
+
+    context "when scopes are not present" do
+      it "does not include scope keys in extra" do
+        extra = strategy.extra
+        expect(extra).not_to have_key("scope")
+        expect(extra).not_to have_key("authed_user_scope")
+      end
+    end
+  end
+
+  describe "#info" do
+    let(:strategy) { fresh_strategy.new("abc", "def") }
+    let(:user_profile) do
+      {
+        "name" => "John Doe",
+        "real_name" => "John Doe",
+        "email" => "john@example.com",
+        "image_48" => "https://example.com/48.png",
+        "image_192" => "https://example.com/192.png",
+        "image_512" => "https://example.com/512.png",
+        "image_original" => "https://example.com/original.png",
+        "title" => "Engineer",
+        "phone" => "+1234567890",
+        "status_text" => "Working",
+        "status_emoji" => ":computer:",
+        "tz" => "America/New_York",
+        "tz_offset" => -18_000,
+        "is_admin" => true,
+        "is_owner" => false
+      }
+    end
+
+    before do
+      allow(strategy).to receive(:identity).and_return(
+        "user" => user_profile,
+        "team" => { "id" => "T456" }
+      )
+    end
+
+    it "includes basic info fields" do
+      info = strategy.info
+      expect(info[:name]).to eq("John Doe")
+      expect(info[:email]).to eq("john@example.com")
+      expect(info[:image]).to eq("https://example.com/48.png")
+    end
+
+    it "includes additional image sizes" do
+      info = strategy.info
+      expect(info[:image_192]).to eq("https://example.com/192.png")
+      expect(info[:image_512]).to eq("https://example.com/512.png")
+      expect(info[:image_original]).to eq("https://example.com/original.png")
+    end
+
+    it "includes profile details" do
+      info = strategy.info
+      expect(info[:title]).to eq("Engineer")
+      expect(info[:phone]).to eq("+1234567890")
+      expect(info[:status_text]).to eq("Working")
+      expect(info[:status_emoji]).to eq(":computer:")
+    end
+
+    it "includes timezone info" do
+      info = strategy.info
+      expect(info[:tz]).to eq("America/New_York")
+      expect(info[:tz_offset]).to eq(-18_000)
+    end
+
+    it "includes admin/owner flags" do
+      info = strategy.info
+      expect(info[:is_admin]).to be true
+      expect(info[:is_owner]).to be false
+    end
+
+    context "when optional fields are missing" do
+      let(:user_profile) do
+        {
+          "name" => "Jane",
+          "email" => "jane@example.com",
+          "image_48" => "https://example.com/48.png"
+        }
+      end
+
+      it "returns nil for missing fields" do
+        info = strategy.info
+        expect(info[:name]).to eq("Jane")
+        expect(info[:title]).to be_nil
+        expect(info[:image_192]).to be_nil
+        expect(info[:tz]).to be_nil
+        expect(info[:is_admin]).to be_nil
+      end
     end
   end
 

@@ -15,7 +15,14 @@ Metrics/BlockLength:
     - "spec/**/*"
 
 Metrics/ClassLength:
-  Max: 150
+  Max: 170
+
+Naming/VariableNumber:
+  EnforcedStyle: snake_case
+  AllowedIdentifiers:
+    - image_192
+    - image_512
+    - image_48
 
 Naming/PredicateMethod:
   Exclude:
