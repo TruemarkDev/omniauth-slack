@@ -56,9 +56,7 @@ module OmniAuth
           "user" => raw_info["user"] || raw_info["profile"],
           "team" => raw_info["team"] || access_token.params["team"]
         }
-        if authed_user_token?
-          @identity["user"]["id"] ||= access_token.params.dig("authed_user", "id")
-        end
+        @identity["user"]["id"] ||= access_token.params.dig("authed_user", "id") if authed_user_token?
 
         @identity
       end
@@ -117,11 +115,12 @@ module OmniAuth
       def credentials
         hash = { "token" => access_token.token }
         hash["user_token"] = access_token.params.dig("authed_user", "access_token") if authed_user_token?
-        expires = access_token.expires_at.present? || access_token.expires_in.present?
-        hash["refresh_token"] = access_token.refresh_token if expires && access_token.refresh_token
-        hash["expires_at"] = access_token.expires_at if access_token.expires_at
-        hash["expires_in"] = access_token.expires_in if access_token.expires_in
-        hash["expires"] = expires
+        if access_token.expires?
+          hash["refresh_token"] = access_token.refresh_token if access_token.refresh_token
+          hash["expires_at"] = access_token.expires_at if access_token.expires_at
+          hash["expires_in"] = access_token.expires_in if access_token.expires_in
+        end
+        hash["expires"] = access_token.expires?
         hash
       end
 
@@ -168,7 +167,7 @@ module OmniAuth
       end
 
       def authed_user_token?
-        access_token.params.dig("authed_user", "access_token").present?
+        !access_token.params.dig("authed_user", "access_token").nil?
       end
 
       def fetch_user_profile

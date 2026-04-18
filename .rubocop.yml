@@ -1,5 +1,25 @@
 AllCops:
-  TargetRubyVersion: 2.6
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+
+Naming/FileName:
+  Exclude:
+    - "lib/omniauth-slack.rb"
+
+Gemspec/DevelopmentDependencies:
+  EnforcedStyle: gemspec
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+
+Metrics/ClassLength:
+  Max: 150
+
+Naming/PredicateMethod:
+  Exclude:
+    - "lib/omniauth/strategies/slack.rb"
 
 Style/Documentation:
   Enabled: false
@@ -17,9 +37,6 @@ Layout/LineLength:
 
 Metrics/AbcSize:
   Max: 30
-
-Metrics/ClassLength:
-  Max: 120
 
 Metrics/MethodLength:
   Max: 15

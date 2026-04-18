@@ -9,16 +9,18 @@ Gem::Specification.new do |spec|
   spec.email = ["ankit@truemark.com.np"]
 
   spec.summary = "Slack Omniauth strategy with OAuth V2"
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.required_ruby_version = ">= 4.0.0"
+
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.files = Dir["lib/**/*"]
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency "omniauth-oauth2", "~> 1.8"
+  spec.add_dependency "omniauth-oauth2", "~> 1.8"
 
-  spec.add_development_dependency "bundler", "~> 2.5"
-  spec.add_development_dependency "pry", "~> 0.14.2"
+  spec.add_development_dependency "bundler", "~> 4.0"
+  spec.add_development_dependency "pry", "~> 0.16.0"
   spec.add_development_dependency "rake", "~> 13.1"
-  spec.add_development_dependency "rspec", "~> 3.12"
-  spec.add_development_dependency "rubocop", "~> 1.64"
+  spec.add_development_dependency "rspec", "~> 3.13"
+  spec.add_development_dependency "rubocop", "~> 1.86"
 end

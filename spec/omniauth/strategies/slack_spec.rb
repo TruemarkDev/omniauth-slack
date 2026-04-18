@@ -1,4 +1,3 @@
-# rubocop:disable Metrics/BlockLength
 # frozen_string_literal: true
 
 require "helper"
@@ -104,11 +103,8 @@ describe OmniAuth::Strategies::Slack do
     before do
       allow(strategy).to receive(:access_token).and_return(access_token)
       allow(access_token).to receive(:token).and_return("123")
-      expires_at = double("expires_at", present?: false)
-      expires_in = double("expires_in", present?: false)
-      allow(access_token).to receive(:expires_at).and_return(expires_at)
-      allow(access_token).to receive(:expires_in).and_return(expires_in)
-      allow_any_instance_of(described_class).to receive(:authed_user_token?).and_return(false)
+      allow(access_token).to receive(:expires?).and_return(false)
+      allow(access_token).to receive(:params).and_return({})
     end
 
     it "returns a Hash" do
@@ -124,16 +120,19 @@ describe OmniAuth::Strategies::Slack do
     end
 
     it "contains refresh token and expiry time when expiring" do
-      expires_at = double((Time.now + 600).to_i, present?: true)
+      expires_at = (Time.now + 600).to_i
+      allow(access_token).to receive(:expires?).and_return(true)
       allow(access_token).to receive(:expires_at).and_return(expires_at)
+      allow(access_token).to receive(:expires_in).and_return(600)
       allow(access_token).to receive(:refresh_token).and_return("321")
       expect(strategy.credentials["refresh_token"]).to eq("321")
-      expect(strategy.credentials["expires_at"]).to eq(access_token.expires_at)
+      expect(strategy.credentials["expires_at"]).to eq(expires_at)
     end
   end
 
   describe "#uid" do
     let(:strategy) { fresh_strategy.new("abc", "def") }
+
     before do
       allow(strategy).to receive(:identity).and_return("user" => { "id" => "U123" }, "team" => { "id" => "T456" })
     end
@@ -236,5 +235,3 @@ describe OmniAuth::Strategies::Slack do
     end
   end
 end
-
-# rubocop:enable Metrics/BlockLength

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gem list:*)",
+      "Bash(gem specification:*)",
+      "Bash(ruby --version)",
+      "Bash(bundler --version)",
+      "Bash(gem contents:*)"
+    ]
+  }
+}
